@@ -1,0 +1,19 @@
+[Unit]
+Description=Telegram Crypto Price Monitoring Bot
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/tgbotbinance
+ExecStart=/opt/tgbotbinance/venv/bin/python /opt/tgbotbinance/main.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/opt/tgbotbinance/logs/bot.log
+StandardError=append:/opt/tgbotbinance/logs/bot_error.log
+
+# Environment
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target
