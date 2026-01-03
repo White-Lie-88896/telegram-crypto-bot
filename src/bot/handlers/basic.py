@@ -88,40 +88,38 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 *基础查询*
 /price <symbol> - 查询实时价格
-   示例：/price BTC 或 /price BTCUSDT
+   示例：/price BTC 或 /price ETH
 
 /help - 显示此帮助信息
 
 *监控任务管理*
-/add - 创建监控任务
-   支持的规则类型：
-   • 价格阈值：当价格达到指定值时提醒
-   • 百分比涨跌：当涨跌幅达到指定百分比时提醒
+/add <币种> price <阈值> - 创建价格阈值监控
+   示例：/add BTC price 50000
+   示例：/add ETH price 3500 2800
+
+/add <币种> percent <参考价> <涨%> <跌%> - 创建百分比监控
+   示例：/add BTC percent 90000 5 -5
 
 /list - 查看所有监控任务
 
-/delete - 删除监控任务
+/delete <任务ID> - 删除监控任务
    示例：/delete 1
 
-*定时汇报*
-/report - 手动触发价格汇报
-/schedule - 设置定时汇报（开发中）
+*功能说明：*
 
-*使用示例：*
+📊 *价格阈值监控*
+设置上限或下限价格，突破时自动预警
 
-1\\. 查询价格：
-   /price BTC
+📈 *百分比涨跌监控*
+基于参考价格，涨跌达到指定百分比时预警
 
-2\\. 创建价格阈值监控：
-   使用 /add 指令后按照提示操作
-
-3\\. 查看所有任务：
-   /list
+⏰ *定时价格汇报*
+每5分钟自动推送BTC、ETH、ADA价格到群组
 
 *注意事项：*
-• 所有价格数据来源于 Binance 现货市场
-• 每个用户最多可创建 50 个监控任务
-• 预警冷却时间默认为 5 分钟
+• 所有价格数据来源于 Binance
+• 每个监控任务有5分钟冷却时间
+• 数据与 TradingView 保持一致
 
 有问题？请联系开发者
 """

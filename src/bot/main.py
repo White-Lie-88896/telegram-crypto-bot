@@ -2,6 +2,7 @@
 Telegram Bot 主框架
 管理 Bot 的启动、指令注册和生命周期
 """
+import asyncio
 from telegram.ext import ApplicationBuilder, CommandHandler, filters
 from telegram import Update
 
@@ -9,7 +10,9 @@ from config.settings import settings
 from src.utils.logger import bot_logger
 from src.bot.handlers.basic import start_command, help_command
 from src.bot.handlers.query import price_command
+from src.bot.handlers.monitor import add_monitor_command, list_monitors_command, delete_monitor_command
 from src.notifier.price_reporter import price_reporter
+from src.monitor.engine import monitor_engine
 
 
 class CryptoBot:
@@ -41,10 +44,10 @@ class CryptoBot:
         # 查询指令
         self.app.add_handler(CommandHandler("price", price_command))
 
-        # TODO: 添加更多指令处理器
-        # self.app.add_handler(CommandHandler("add", add_monitor_command))
-        # self.app.add_handler(CommandHandler("list", list_monitors_command))
-        # self.app.add_handler(CommandHandler("delete", delete_monitor_command))
+        # 监控任务管理指令
+        self.app.add_handler(CommandHandler("add", add_monitor_command))
+        self.app.add_handler(CommandHandler("list", list_monitors_command))
+        self.app.add_handler(CommandHandler("delete", delete_monitor_command))
 
         bot_logger.info("Command handlers registered")
 
@@ -68,8 +71,11 @@ class CryptoBot:
         else:
             bot_logger.warning("REPORT_USER_ID not set, price reporter disabled")
 
-        # TODO: 启动监控引擎
-        # await monitor_engine.start()
+        # 启动监控引擎
+        bot_logger.info("Starting monitor engine...")
+        monitor_engine.set_bot(application.bot)
+        asyncio.create_task(monitor_engine.start())
+        bot_logger.info("Monitor engine started")
 
     async def post_shutdown(self, application):
         """Bot 关闭前的清理操作"""
@@ -78,8 +84,8 @@ class CryptoBot:
         # 停止价格汇报器
         price_reporter.stop()
 
-        # TODO: 停止监控引擎
-        # await monitor_engine.stop()
+        # 停止监控引擎
+        await monitor_engine.stop()
 
     def run(self):
         """启动 Bot"""
