@@ -33,9 +33,12 @@ async def add_monitor_command(update: Update, context: ContextTypes.DEFAULT_TYPE
             "❌ 参数错误\n\n"
             "*用法：*\n"
             "`/add <币种> <类型> <参数...>`\n\n"
-            "*示例：*\n"
-            "• `/add BTC price 50000` - BTC达到50000预警\n"
-            "• `/add ETH price 3000 2500` - ETH突破3000或跌破2500\n"
+            "*价格阈值监控示例：*\n"
+            "• `/add BTC price 50000` - BTC达到50000时预警\n"
+            "• `/add BTC price high 50000` - BTC达到50000时预警（明确上限）\n"
+            "• `/add BTC price low 40000` - BTC跌破40000时预警（明确下限）\n"
+            "• `/add ETH price 3000 2500` - ETH突破3000或跌破2500\n\n"
+            "*百分比监控示例：*\n"
             "• `/add BTC percent 90000 5 -5` - BTC相对90000涨5%或跌5%\n\n"
             "*说明：*\n"
             "• 币种：BTC, ETH, ADA, SOL等\n"
@@ -56,10 +59,41 @@ async def add_monitor_command(update: Update, context: ContextTypes.DEFAULT_TYPE
             rule_type = 'PRICE_THRESHOLD'
             rule_config = {}
 
+            # 支持多种格式：
+            # /add BTC price 50000           - 只设上限
+            # /add BTC price high 50000      - 只设上限（明确）
+            # /add BTC price low 40000       - 只设下限（明确）
+            # /add BTC price 50000 40000     - 设上下限
+
             if len(context.args) >= 3:
-                rule_config['threshold_high'] = float(context.args[2])
-            if len(context.args) >= 4:
-                rule_config['threshold_low'] = float(context.args[3])
+                third_arg = context.args[2].lower()
+
+                if third_arg == 'high':
+                    # /add BTC price high 50000
+                    if len(context.args) < 4:
+                        await update.message.reply_text("❌ 请指定上限价格\n示例：`/add BTC price high 50000`", parse_mode='Markdown')
+                        return
+                    rule_config['threshold_high'] = float(context.args[3])
+
+                elif third_arg == 'low':
+                    # /add BTC price low 40000
+                    if len(context.args) < 4:
+                        await update.message.reply_text("❌ 请指定下限价格\n示例：`/add BTC price low 40000`", parse_mode='Markdown')
+                        return
+                    rule_config['threshold_low'] = float(context.args[3])
+
+                else:
+                    # /add BTC price 50000 [40000]
+                    try:
+                        threshold_value = float(context.args[2])
+                        rule_config['threshold_high'] = threshold_value
+
+                        # 如果提供了第二个数字，作为下限
+                        if len(context.args) >= 4:
+                            rule_config['threshold_low'] = float(context.args[3])
+                    except ValueError:
+                        await update.message.reply_text("❌ 价格必须是数字")
+                        return
 
             if not rule_config:
                 await update.message.reply_text("❌ 请至少指定一个价格阈值")

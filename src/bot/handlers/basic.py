@@ -108,7 +108,13 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 `/add <币种> price <阈值>`
 
    示例：`/add BTC price 50000`
-   说明：BTC 达到 $50,000 时预警
+   说明：BTC 达到 $50,000 时预警（上限）
+
+   示例：`/add BTC price high 50000`
+   说明：BTC 达到 $50,000 时预警（明确指定上限）
+
+   示例：`/add BTC price low 40000`
+   说明：BTC 跌破 $40,000 时预警（明确指定下限）
 
    示例：`/add ETH price 3500 2800`
    说明：ETH 突破 $3,500 或跌破 $2,800

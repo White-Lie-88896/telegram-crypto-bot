@@ -53,7 +53,7 @@ class MessageFormatter:
 24h 涨跌：`{change_pct:+.2f}%` {trend}
 24h 成交量：{volume:,.2f} {symbol.replace('USDT', '')}
 
-⏰ 更新时间：{datetime.now().strftime('%H:%M:%S')}
+⏰ 更新时间：{datetime.now().strftime('%H:%M')}
 💡 数据来源：Binance
 """
         return message.strip()

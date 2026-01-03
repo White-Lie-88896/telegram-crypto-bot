@@ -180,14 +180,16 @@ python main.py
 
 **价格阈值监控**：
 ```
-/add BTC price 50000           # BTC达到50000时预警
-/add ETH price 3500 2800       # ETH突破3500或跌破2800
+/add BTC price 50000              # BTC达到50000时预警（上限）
+/add BTC price high 50000         # BTC达到50000时预警（明确上限）
+/add BTC price low 40000          # BTC跌破40000时预警（明确下限）
+/add ETH price 3500 2800          # ETH突破3500或跌破2800
 ```
 
 **百分比涨跌监控**：
 ```
-/add BTC percent 90000 5 -5    # BTC相对90000涨5%或跌5%时预警
-/add ETH percent 3000 10 -10   # ETH相对3000涨10%或跌10%
+/add BTC percent 90000 5 -5       # BTC相对90000涨5%或跌5%时预警
+/add ETH percent 3000 10 -10      # ETH相对3000涨10%或跌10%
 ```
 
 #### 📋 查看任务列表

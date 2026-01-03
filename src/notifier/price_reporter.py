@@ -75,7 +75,7 @@ class PriceReporter:
             格式化的消息
         """
         now = datetime.now()
-        time_str = now.strftime("%H:%M:%S")
+        time_str = now.strftime("%H:%M")  # 只显示小时和分钟
 
         # 表情符号映射
         emoji_map = {
