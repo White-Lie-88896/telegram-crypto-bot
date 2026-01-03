@@ -54,9 +54,11 @@ class PercentageChangeRule(MonitorRule):
             triggered = True
             trigger_condition = f"涨幅 >= {self.percentage_high}%"
             message = f"📈 *{symbol} 涨幅预警*\n\n"
+            message += f"━━━━━━━━━━━━━━━━━━━━━━\n"
             message += f"当前价格: `${current_price:,.2f}`\n"
             message += f"参考价格: `${self.reference_price:,.2f}`\n"
-            message += f"涨幅: `{change_percent:+.2f}%`\n\n"
+            message += f"涨幅: `{change_percent:+.2f}%`\n"
+            message += f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
             message += f"🔥 涨幅已达 {self.percentage_high}%！"
 
         # 检查下跌幅度
@@ -64,9 +66,11 @@ class PercentageChangeRule(MonitorRule):
             triggered = True
             trigger_condition = f"跌幅 <= {self.percentage_low}%"
             message = f"📉 *{symbol} 跌幅预警*\n\n"
+            message += f"━━━━━━━━━━━━━━━━━━━━━━\n"
             message += f"当前价格: `${current_price:,.2f}`\n"
             message += f"参考价格: `${self.reference_price:,.2f}`\n"
-            message += f"跌幅: `{change_percent:+.2f}%`\n\n"
+            message += f"跌幅: `{change_percent:+.2f}%`\n"
+            message += f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
             message += f"⚠️ 跌幅已达 {abs(self.percentage_low)}%！"
 
         return RuleEvaluationResult(

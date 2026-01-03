@@ -46,8 +46,10 @@ class PriceThresholdRule(MonitorRule):
             triggered = True
             trigger_condition = f"价格 >= ${self.threshold_high:,.2f}"
             message = f"🔴 *{symbol} 价格预警*\n\n"
+            message += f"━━━━━━━━━━━━━━━━━━━━━━\n"
             message += f"当前价格: `${current_price:,.2f}`\n"
-            message += f"已达到上限: `${self.threshold_high:,.2f}`\n\n"
+            message += f"已达到上限: `${self.threshold_high:,.2f}`\n"
+            message += f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
             message += f"📈 突破上限阈值！"
 
         # 检查下限
@@ -55,8 +57,10 @@ class PriceThresholdRule(MonitorRule):
             triggered = True
             trigger_condition = f"价格 <= ${self.threshold_low:,.2f}"
             message = f"🟢 *{symbol} 价格预警*\n\n"
+            message += f"━━━━━━━━━━━━━━━━━━━━━━\n"
             message += f"当前价格: `${current_price:,.2f}`\n"
-            message += f"已达到下限: `${self.threshold_low:,.2f}`\n\n"
+            message += f"已达到下限: `${self.threshold_low:,.2f}`\n"
+            message += f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
             message += f"📉 跌破下限阈值！"
 
         return RuleEvaluationResult(

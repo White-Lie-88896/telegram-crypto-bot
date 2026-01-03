@@ -28,21 +28,33 @@ class MessageFormatter:
         volume = ticker_data['volume']
 
         # 选择 emoji
-        emoji = "🟢" if change_pct >= 0 else "🔴"
+        emoji = "💰"
         trend = "↗️" if change_pct >= 0 else "↘️"
+
+        # 格式化价格显示
+        if price >= 1:
+            price_str = f"${price:,.2f}"
+            high_str = f"${high:,.2f}"
+            low_str = f"${low:,.2f}"
+        else:
+            price_str = f"${price:.8f}"
+            high_str = f"${high:.8f}"
+            low_str = f"${low:.8f}"
 
         message = f"""
 {emoji} *{symbol} 价格信息*
 
-当前价格: `{price:.8f}` USDT
-24h 涨跌: `{change_pct:+.2f}%` {trend}
+━━━━━━━━━━━━━━━━━━━━━━
+📊 当前价格：{price_str}
+━━━━━━━━━━━━━━━━━━━━━━
 
-24h 最高: `{high:.8f}`
-24h 最低: `{low:.8f}`
-24h 成交量: `{volume:,.0f}`
+24h 最高：{high_str}
+24h 最低：{low_str}
+24h 涨跌：`{change_pct:+.2f}%` {trend}
+24h 成交量：{volume:,.2f} {symbol.replace('USDT', '')}
 
-数据来源: Binance 现货市场
-更新时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+⏰ 更新时间：{datetime.now().strftime('%H:%M:%S')}
+💡 数据来源：Binance
 """
         return message.strip()
 
