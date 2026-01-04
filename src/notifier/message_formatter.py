@@ -32,28 +32,38 @@ class MessageFormatter:
         trend = "↗️" if change_pct >= 0 else "↘️"
 
         # 格式化价格显示
-        if price >= 1:
+        if price >= 1000:
             price_str = f"${price:,.2f}"
             high_str = f"${high:,.2f}"
             low_str = f"${low:,.2f}"
+        elif price >= 1:
+            price_str = f"${price:.4f}"
+            high_str = f"${high:.4f}"
+            low_str = f"${low:.4f}"
         else:
-            price_str = f"${price:.8f}"
-            high_str = f"${high:.8f}"
-            low_str = f"${low:.8f}"
+            price_str = f"${price:.6f}"
+            high_str = f"${high:.6f}"
+            low_str = f"${low:.6f}"
+
+        # 格式化成交量
+        if volume >= 1000:
+            volume_str = f"{volume:,.2f}"
+        else:
+            volume_str = f"{volume:.4f}"
 
         message = f"""
-{emoji} *{symbol} 价格信息*
+{emoji} *{symbol.replace('USDT', '')} 价格信息*
 
 ━━━━━━━━━━━━━━━━━━━━━━
-📊 当前价格：{price_str}
+📊 当前价格：`{price_str}`
 ━━━━━━━━━━━━━━━━━━━━━━
 
-24h 最高：{high_str}
-24h 最低：{low_str}
+24h 最高：`{high_str}`
+24h 最低：`{low_str}`
 24h 涨跌：`{change_pct:+.2f}%` {trend}
-24h 成交量：{volume:,.2f} {symbol.replace('USDT', '')}
+24h 成交量：`{volume_str}` {symbol.replace('USDT', '')}
 
-⏰ 更新时间：{datetime.now().strftime('%H:%M')}
+⏰ 更新时间：`{datetime.now().strftime('%H:%M:%S')}`
 💡 数据来源：Binance
 """
         return message.strip()

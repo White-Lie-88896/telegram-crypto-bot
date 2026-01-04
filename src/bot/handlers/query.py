@@ -23,11 +23,15 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # 检查参数
     if not context.args:
         await update.message.reply_text(
-            "请提供币种名称\n\n"
-            "用法：\n"
-            "/price BTC\n"
-            "/price ETH\n"
-            "/price SOL"
+            "❌ *请提供币种名称*\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            "*用法示例：*\n"
+            "`/price BTC` - 查询比特币价格\n"
+            "`/price ETH` - 查询以太坊价格\n"
+            "`/price SOL` - 查询 Solana 价格\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "💡 支持所有主流加密货币",
+            parse_mode='Markdown'
         )
         return
 
@@ -36,7 +40,8 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # 发送加载消息
         loading_msg = await update.message.reply_text(
-            f"正在查询 {symbol.upper()} 价格..."
+            f"🔍 正在查询 *{symbol.upper()}* 价格...",
+            parse_mode='Markdown'
         )
 
         # 获取 24h ticker 数据（来自 Binance）
@@ -55,26 +60,53 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except InvalidSymbolError as e:
         await loading_msg.delete()
-        error_msg = MessageFormatter.format_error(
-            f"无效的币种: {symbol}\n\n"
-            f"请检查币种名称是否正确\n"
-            f"支持的币种: BTC, ETH, SOL, DOGE 等"
-        )
-        await update.message.reply_text(error_msg)
+        error_msg = f"""❌ *无效的币种*
+
+━━━━━━━━━━━━━━━━━━━━━━
+输入的币种: `{symbol}`
+━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ 请检查币种名称是否正确
+
+*支持的主流币种：*
+• BTC - 比特币
+• ETH - 以太坊
+• SOL - Solana
+• ADA - 艾达币
+• BNB - 币安币
+• DOGE - 狗狗币
+
+💡 使用 `/price <币种>` 查询"""
+        await update.message.reply_text(error_msg, parse_mode='Markdown')
         bot_logger.warning(f"User {user_id} queried invalid symbol: {symbol}")
 
     except BinanceAPIError as e:
         await loading_msg.delete()
-        error_msg = MessageFormatter.format_error(
-            "无法获取价格数据，请稍后再试"
-        )
-        await update.message.reply_text(error_msg)
+        error_msg = f"""❌ *无法获取价格数据*
+
+━━━━━━━━━━━━━━━━━━━━━━
+⚠️ API 请求失败
+━━━━━━━━━━━━━━━━━━━━━━
+
+可能的原因：
+• 网络连接问题
+• API 服务暂时不可用
+• 请求频率过高
+
+💡 请稍后再试"""
+        await update.message.reply_text(error_msg, parse_mode='Markdown')
         bot_logger.error(f"API error for {symbol}: {e}")
 
     except Exception as e:
         await loading_msg.delete()
-        error_msg = MessageFormatter.format_error("发生未知错误")
-        await update.message.reply_text(error_msg)
+        error_msg = f"""❌ *发生未知错误*
+
+━━━━━━━━━━━━━━━━━━━━━━
+⚠️ 系统错误
+━━━━━━━━━━━━━━━━━━━━━━
+
+💡 请稍后再试或联系管理员"""
+        await update.message.reply_text(error_msg, parse_mode='Markdown')
         bot_logger.error(f"Unexpected error in price_command: {e}", exc_info=True)
 
 
