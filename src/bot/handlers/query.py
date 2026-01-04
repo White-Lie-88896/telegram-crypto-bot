@@ -5,7 +5,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from src.exchange.cryptocompare_client import cryptocompare_client
+from src.exchange.price_api_manager import price_api_manager
 from src.notifier.message_formatter import MessageFormatter
 from src.utils.logger import bot_logger
 from src.utils.exceptions import BinanceAPIError, InvalidSymbolError
@@ -44,8 +44,8 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown'
         )
 
-        # 获取 24h ticker 数据（来自 Binance）
-        ticker_data = await cryptocompare_client.get_24h_ticker(symbol)
+        # 获取 24h ticker 数据（使用多API故障转移）
+        ticker_data = await price_api_manager.get_24h_ticker(symbol)
 
         # 格式化并发送结果
         message = MessageFormatter.format_price_info(ticker_data)

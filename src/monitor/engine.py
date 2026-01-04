@@ -12,7 +12,7 @@ from sqlalchemy import select
 from config.settings import settings
 from src.database.connection import db_manager
 from src.database.models import MonitorTask, AlertHistory
-from src.exchange.cryptocompare_client import cryptocompare_client
+from src.exchange.price_api_manager import price_api_manager
 from src.monitor.rules.price_threshold import PriceThresholdRule
 from src.monitor.rules.percentage_change import PercentageChangeRule
 from src.utils.logger import bot_logger
@@ -76,8 +76,8 @@ class MonitorEngine:
                     # 仍在冷却期
                     return
 
-            # 获取当前价格
-            current_price = await cryptocompare_client.get_current_price(task.symbol)
+            # 获取当前价格（使用多API故障转移）
+            current_price = await price_api_manager.get_current_price(task.symbol)
 
             # 创建并评估规则
             rule = self._create_rule(task.rule_type, task.rule_config)

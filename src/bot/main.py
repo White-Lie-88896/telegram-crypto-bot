@@ -11,6 +11,7 @@ from src.utils.logger import bot_logger
 from src.bot.handlers.basic import start_command, help_command
 from src.bot.handlers.query import price_command
 from src.bot.handlers.monitor import add_monitor_command, list_monitors_command, delete_monitor_command
+from src.bot.handlers.report import report_config_command
 from src.notifier.price_reporter import price_reporter
 from src.monitor.engine import monitor_engine
 
@@ -49,6 +50,9 @@ class CryptoBot:
         self.app.add_handler(CommandHandler("list", list_monitors_command))
         self.app.add_handler(CommandHandler("delete", delete_monitor_command))
 
+        # 价格汇报配置指令
+        self.app.add_handler(CommandHandler("report", report_config_command))
+
         bot_logger.info("Command handlers registered")
 
     async def post_init(self, application):
@@ -61,15 +65,12 @@ class CryptoBot:
         await init_database()
         bot_logger.info("Database initialized successfully")
 
-        # 启动价格汇报器
-        if settings.REPORT_USER_ID:
-            bot_logger.info("Starting price reporter...")
-            price_reporter.set_bot(application.bot)
-            price_reporter.set_user(settings.REPORT_USER_ID)
-            price_reporter.start()
-            bot_logger.info(f"Price reporter started for user {settings.REPORT_USER_ID}")
-        else:
-            bot_logger.warning("REPORT_USER_ID not set, price reporter disabled")
+        # 启动价格汇报器（加载所有用户配置）
+        bot_logger.info("Starting price reporter...")
+        price_reporter.set_bot(application.bot)
+        price_reporter.start()
+        await price_reporter.load_and_start_all_reports()
+        bot_logger.info("Price reporter started")
 
         # 启动监控引擎
         bot_logger.info("Starting monitor engine...")

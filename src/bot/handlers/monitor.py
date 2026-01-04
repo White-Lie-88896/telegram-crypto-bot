@@ -10,7 +10,7 @@ from datetime import datetime
 
 from src.database.connection import db_manager
 from src.database.models import MonitorTask, User
-from src.exchange.cryptocompare_client import cryptocompare_client
+from src.exchange.price_api_manager import price_api_manager
 from src.utils.logger import bot_logger
 from src.utils.exceptions import InvalidSymbolError
 
@@ -51,8 +51,8 @@ async def add_monitor_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     rule_type_arg = context.args[1].lower()
 
     try:
-        # 验证交易对
-        await cryptocompare_client.validate_symbol(symbol)
+        # 验证交易对（使用多API故障转移）
+        await price_api_manager.validate_symbol(symbol)
 
         # 解析规则类型和配置
         if rule_type_arg == 'price':

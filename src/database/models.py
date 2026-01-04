@@ -129,6 +129,41 @@ class AlertHistory(Base):
         }
 
 
+class ReportConfig(Base):
+    """用户价格汇报配置表"""
+    __tablename__ = 'report_configs'
+
+    user_id = Column(Integer, ForeignKey('users.user_id'), primary_key=True)
+    enabled = Column(Boolean, default=False)  # 是否启用汇报
+    interval_minutes = Column(Integer, default=30)  # 汇报间隔（分钟）
+    symbols = Column(Text, default='BTC,ETH,ADA')  # 监控币种列表（逗号分隔）
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<ReportConfig(user_id={self.user_id}, enabled={self.enabled}, interval={self.interval_minutes})>"
+
+    def get_symbols_list(self) -> list:
+        """获取币种列表"""
+        if not self.symbols:
+            return ['BTC', 'ETH', 'ADA']
+        return [s.strip().upper() for s in self.symbols.split(',') if s.strip()]
+
+    def set_symbols_list(self, symbols: list):
+        """设置币种列表"""
+        self.symbols = ','.join([s.strip().upper() for s in symbols if s.strip()])
+
+    def to_dict(self):
+        return {
+            'user_id': self.user_id,
+            'enabled': self.enabled,
+            'interval_minutes': self.interval_minutes,
+            'symbols': self.get_symbols_list(),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
 class SystemConfig(Base):
     """系统配置表"""
     __tablename__ = 'system_config'
@@ -150,4 +185,4 @@ class SystemConfig(Base):
         }
 
 
-__all__ = ['Base', 'User', 'MonitorTask', 'AlertHistory', 'SystemConfig']
+__all__ = ['Base', 'User', 'MonitorTask', 'AlertHistory', 'ReportConfig', 'SystemConfig']

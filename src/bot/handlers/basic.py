@@ -135,6 +135,20 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 ━━━━━━━━━━━━━━━━━━━━━━
 
+⏰ *定时价格汇报*
+
+`/report config <间隔> <币种>` - 配置汇报参数
+   示例：`/report config 30 BTC,ETH,SOL`
+   说明：每30分钟汇报BTC、ETH、SOL价格
+
+`/report start` - 启动汇报
+
+`/report stop` - 停止汇报
+
+`/report status` - 查看当前配置
+
+━━━━━━━━━━━━━━━━━━━━━━
+
 ✨ *功能特性*
 
 📊 *价格阈值监控*
@@ -144,16 +158,17 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 基于参考价格，涨跌达到指定百分比时预警
 
 ⏰ *定时价格汇报*
-每 5 分钟自动推送 BTC、ETH、ADA 价格
+自定义汇报间隔和监控币种，自动定时推送价格
 
 ━━━━━━━━━━━━━━━━━━━━━━
 
 ⚠️ *注意事项*
 
-• 数据来源：Binance 现货市场
+• 数据来源：Binance 现货市场（自动故障转移）
 • 冷却时间：5 分钟
 • 价格与 TradingView 保持一致
 • 监控检查频率：5 秒
+• 支持多币种：BTC、ETH、SOL、ADA、BNB等
 
 ━━━━━━━━━━━━━━━━━━━━━━
 
