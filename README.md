@@ -39,9 +39,17 @@
 ```
 
 ### ⏰ 定时价格汇报
-- 每 5 分钟自动推送 BTC、ETH、ADA 价格
+- **用户自定义配置**：每个用户可设置自己的汇报间隔和币种
+- **灵活的间隔设置**：5分钟 - 7天任意设置
+- **自由选择币种**：最多可选择10个币种
 - 精美的排版格式，带加密货币符号
-- 可配置推送到个人或群组
+- 支持 BTC、ETH、SOL、ADA、BNB 等多种币种
+
+### 🔄 多API故障转移
+- **自动切换**：主API失败时自动切换到备用API
+- **多数据源**：Cryptocompare（Binance）+ CoinGecko
+- **高可用性**：确保价格查询始终可用
+- **智能优化**：记住当前可用的API，提升响应速度
 
 ### 🔐 安全可靠
 - systemd 服务管理，开机自启
@@ -203,6 +211,31 @@ python main.py
 /delete 1      # 删除任务ID为1的监控
 ```
 
+### 价格汇报配置
+
+#### 📊 配置汇报参数
+```
+/report config 30 BTC,ETH,SOL     # 每30分钟汇报BTC、ETH、SOL
+/report config 60 BTC,ETH,ADA,BNB # 每60分钟汇报4个币种
+/report config 1440 BTC           # 每24小时汇报BTC
+```
+
+**参数说明**：
+- 间隔时间：5-10080 分钟（5分钟-7天）
+- 币种列表：用逗号分隔，最多10个
+
+#### ▶️ 启动/停止汇报
+```
+/report start      # 启动价格汇报
+/report stop       # 停止价格汇报
+/report status     # 查看当前配置
+```
+
+**注意事项**：
+- 配置后需要手动执行 `/report start` 启动
+- 修改配置后需要先 `stop` 再 `start` 才能生效
+- 每个用户可以有独立的汇报配置
+
 ### 监控特性说明
 
 #### ⏱️ 冷却时间
@@ -278,7 +311,8 @@ sudo systemctl status tgbot-crypto
 |------|------|------|
 | 语言 | Python | 3.12+ |
 | Bot 框架 | python-telegram-bot | 20.7 |
-| 数据源 | Cryptocompare API | - |
+| 数据源（主） | Cryptocompare API | - |
+| 数据源（备） | CoinGecko API | - |
 | 数据库 | SQLite + SQLAlchemy | 2.0+ |
 | 定时任务 | APScheduler | 3.10+ |
 | HTTP 客户端 | aiohttp | 3.9+ |
@@ -297,11 +331,13 @@ telegram-crypto-bot/
 │   │   └── handlers/           # 指令处理器
 │   │       ├── basic.py        # 基础指令（/start, /help）
 │   │       ├── query.py        # 查询指令（/price）
-│   │       └── monitor.py      # 监控指令（/add, /list, /delete）
+│   │       ├── monitor.py      # 监控指令（/add, /list, /delete）
+│   │       └── report.py       # 汇报配置指令（/report）
 │   ├── exchange/               # 交易所数据层
-│   │   ├── cryptocompare_client.py  # Cryptocompare API 客户端
-│   │   ├── coingecko_client.py      # CoinGecko API 客户端（备用）
-│   │   └── binance_client.py        # Binance API 客户端（废弃）
+│   │   ├── price_api_manager.py      # 多API故障转移管理器
+│   │   ├── cryptocompare_client.py   # Cryptocompare API 客户端
+│   │   ├── coingecko_client.py       # CoinGecko API 客户端
+│   │   └── binance_client.py         # Binance API 客户端（废弃）
 │   ├── monitor/                # 监控引擎
 │   │   ├── engine.py           # 监控引擎核心
 │   │   └── rules/              # 监控规则
@@ -345,7 +381,11 @@ telegram-crypto-bot/
     ↓
 命令处理器解析参数
     ↓
-调用 Cryptocompare API
+调用 PriceAPIManager
+    ↓
+尝试 Cryptocompare API
+    ↓ (失败时)
+自动切换到 CoinGecko API
     ↓
 格式化价格信息
     ↓
@@ -373,13 +413,21 @@ telegram-crypto-bot/
 
 #### 3. 定时汇报流程
 ```
-APScheduler 定时触发（每5分钟）
+用户配置：/report config 30 BTC,ETH,SOL
     ↓
-并发获取 BTC、ETH、ADA 价格
+保存到 ReportConfig 表
+    ↓
+用户启动：/report start
+    ↓
+PriceReporter 创建定时任务
+    ↓
+APScheduler 按用户配置的间隔触发
+    ↓
+并发获取用户配置的币种价格（多API故障转移）
     ↓
 格式化汇报消息
     ↓
-发送到配置的用户/群组
+发送到用户
 ```
 
 ---
@@ -417,17 +465,27 @@ CHECK_INTERVAL=5    # 修改为你想要的秒数
 ```
 然后重启服务：`sudo systemctl restart tgbot-crypto`
 
-### Q: 如何修改汇报频率？
+### Q: 如何配置价格汇报？
 
-**A:** 修改 `src/notifier/price_reporter.py` 中的定时任务设置：
-```python
-self.scheduler.add_job(
-    self.send_price_report,
-    'interval',
-    minutes=5,  # 修改这里
-    ...
-)
+**A:** 使用 `/report` 命令：
+```bash
+# 1. 配置汇报参数（间隔和币种）
+/report config 30 BTC,ETH,SOL
+
+# 2. 启动汇报
+/report start
+
+# 3. 查看状态
+/report status
+
+# 4. 停止汇报
+/report stop
 ```
+
+**参数说明**：
+- 间隔：5-10080 分钟（5分钟到7天）
+- 币种：用逗号分隔，最多10个
+- 修改配置后需要先 stop 再 start
 
 ### Q: 数据库损坏如何修复？
 
@@ -473,6 +531,8 @@ python scripts/init_db.py
 - [x] systemd 服务部署
 - [x] 完善错误处理
 - [x] 创建测试套件（39个测试用例）
+- [x] **用户自定义价格汇报配置（/report命令）**
+- [x] **多API自动故障转移系统（Cryptocompare + CoinGecko）**
 
 ### 🚧 进行中
 - [ ] 优化消息格式
