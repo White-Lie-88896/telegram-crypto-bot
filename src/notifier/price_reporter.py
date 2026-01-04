@@ -120,8 +120,11 @@ class PriceReporter:
             # 并发获取所有价格（使用多API故障转移）
             prices = await price_api_manager.get_multiple_prices(symbols)
 
+            # 获取API来源
+            api_source = price_api_manager.last_api_used or 'Binance'
+
             # 构建汇报消息
-            message = self._format_report(symbols, prices)
+            message = self._format_report(symbols, prices, api_source)
 
             # 发送消息
             await self.bot.send_message(
@@ -135,13 +138,14 @@ class PriceReporter:
         except Exception as e:
             bot_logger.error(f"Error sending price report to user {user_id}: {e}", exc_info=True)
 
-    def _format_report(self, symbols: List[str], prices: Dict[str, float]) -> str:
+    def _format_report(self, symbols: List[str], prices: Dict[str, float], api_source: str = 'Binance') -> str:
         """
         格式化价格汇报消息
 
         Args:
             symbols: 币种列表
             prices: 币种价格字典 {symbol: price}
+            api_source: API数据来源
 
         Returns:
             格式化的消息
@@ -185,7 +189,7 @@ class PriceReporter:
 
         lines.append("")
         lines.append("─────────────────────────")
-        lines.append("💡 _数据来源: Binance_")
+        lines.append(f"💡 _数据来源: {api_source}_")
 
         return "\n".join(lines)
 

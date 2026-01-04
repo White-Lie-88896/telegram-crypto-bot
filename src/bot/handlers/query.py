@@ -47,8 +47,9 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # 获取 24h ticker 数据（使用多API故障转移）
         ticker_data = await price_api_manager.get_24h_ticker(symbol)
 
-        # 格式化并发送结果
-        message = MessageFormatter.format_price_info(ticker_data)
+        # 格式化并发送结果（包含API来源）
+        api_source = price_api_manager.last_api_used or 'Binance'
+        message = MessageFormatter.format_price_info(ticker_data, api_source)
 
         # 删除加载消息
         await loading_msg.delete()

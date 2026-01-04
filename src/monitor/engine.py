@@ -79,12 +79,17 @@ class MonitorEngine:
             # 获取当前价格（使用多API故障转移）
             current_price = await price_api_manager.get_current_price(task.symbol)
 
+            # 获取API来源
+            api_source = price_api_manager.last_api_used or 'Binance'
+
             # 创建并评估规则
             rule = self._create_rule(task.rule_type, task.rule_config)
             result = await rule.evaluate(current_price, task.symbol)
 
-            # 如果触发，发送预警
+            # 如果触发，在消息中添加API来源并发送预警
             if result.triggered:
+                # 在消息末尾添加API来源信息
+                result.message = result.message + f"\n\n💡 _数据来源: {api_source}_"
                 await self._send_alert(task, result)
 
         except Exception as e:
