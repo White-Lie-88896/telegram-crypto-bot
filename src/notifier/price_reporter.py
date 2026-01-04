@@ -26,7 +26,11 @@ class PriceReporter:
 
     def set_bot(self, bot: Bot):
         """设置 Bot 实例"""
+        if bot is None:
+            bot_logger.error("Cannot set None as bot instance")
+            raise ValueError("Bot cannot be None")
         self.bot = bot
+        bot_logger.info("Bot instance set for price reporter")
 
     def set_user(self, user_id: int):
         """设置接收汇报的用户"""
@@ -117,27 +121,40 @@ class PriceReporter:
 
     def start(self):
         """启动定时任务"""
+        if not self.bot:
+            bot_logger.error("Cannot start price reporter: Bot not set")
+            raise RuntimeError("Bot must be set before starting price reporter")
+
         if not self.user_id:
             bot_logger.warning("Cannot start scheduler: user_id not set")
             return
 
-        # 添加定时任务：每5分钟执行一次
-        self.scheduler.add_job(
-            self.send_price_report,
-            'interval',
-            minutes=5,
-            id='price_report',
-            replace_existing=True
-        )
+        try:
+            # 添加定时任务：每5分钟执行一次
+            self.scheduler.add_job(
+                self.send_price_report,
+                'interval',
+                minutes=5,
+                id='price_report',
+                replace_existing=True
+            )
 
-        self.scheduler.start()
-        bot_logger.info("Price reporter scheduler started (every 5 minutes)")
+            self.scheduler.start()
+            bot_logger.info("Price reporter scheduler started (every 5 minutes)")
+        except Exception as e:
+            bot_logger.error(f"Failed to start price reporter scheduler: {e}", exc_info=True)
+            raise
 
     def stop(self):
         """停止定时任务"""
-        if self.scheduler.running:
-            self.scheduler.shutdown()
-            bot_logger.info("Price reporter scheduler stopped")
+        try:
+            if self.scheduler.running:
+                self.scheduler.shutdown()
+                bot_logger.info("Price reporter scheduler stopped")
+            else:
+                bot_logger.info("Price reporter scheduler is not running")
+        except Exception as e:
+            bot_logger.error(f"Error stopping price reporter scheduler: {e}", exc_info=True)
 
 
 # 全局实例

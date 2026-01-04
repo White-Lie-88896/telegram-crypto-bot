@@ -96,9 +96,12 @@ class DatabaseManager:
 
     async def close(self):
         """关闭数据库连接"""
-        if self._engine is not None:
-            await self._engine.dispose()
-            database_logger.info("Database connection closed")
+        try:
+            if self._engine is not None:
+                await self._engine.dispose()
+                database_logger.info("Database connection closed")
+        except Exception as e:
+            database_logger.error(f"Error closing database connection: {e}", exc_info=True)
 
 
 # 全局数据库管理器实例

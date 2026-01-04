@@ -31,7 +31,11 @@ class MonitorEngine:
 
     def set_bot(self, bot: Bot):
         """设置 Bot 实例"""
+        if bot is None:
+            bot_logger.error("Cannot set None as bot instance")
+            raise ValueError("Bot cannot be None")
         self.bot = bot
+        bot_logger.info("Bot instance set for monitor engine")
 
     def _create_rule(self, rule_type: str, rule_config: str):
         """
@@ -44,7 +48,11 @@ class MonitorEngine:
         Returns:
             规则实例
         """
-        config = json.loads(rule_config)
+        try:
+            config = json.loads(rule_config)
+        except json.JSONDecodeError as e:
+            bot_logger.error(f"Invalid JSON in rule_config: {e}")
+            raise ValueError(f"Invalid rule configuration JSON: {e}")
 
         if rule_type == 'PRICE_THRESHOLD':
             return PriceThresholdRule(config)
@@ -104,22 +112,27 @@ class MonitorEngine:
 
             # 更新任务触发时间
             async with db_manager.get_session() as session:
-                task.last_triggered_at = datetime.utcnow()
-                session.add(task)
+                # 重新获取任务对象以避免 detached instance 错误
+                stmt = select(MonitorTask).where(MonitorTask.task_id == task.task_id)
+                db_result = await session.execute(stmt)
+                db_task = db_result.scalar_one_or_none()
 
-                # 记录预警历史
-                alert = AlertHistory(
-                    task_id=task.task_id,
-                    user_id=task.user_id,
-                    symbol=task.symbol,
-                    market_type=task.market_type,
-                    trigger_price=result.current_value,
-                    trigger_value=result.current_value,
-                    message=result.message,
-                    sent_success=True
-                )
-                session.add(alert)
-                await session.commit()
+                if db_task:
+                    db_task.last_triggered_at = datetime.utcnow()
+
+                    # 记录预警历史
+                    alert = AlertHistory(
+                        task_id=task.task_id,
+                        user_id=task.user_id,
+                        symbol=task.symbol,
+                        market_type=task.market_type,
+                        trigger_price=result.current_value,
+                        trigger_value=result.current_value,
+                        message=result.message,
+                        sent_success=True
+                    )
+                    session.add(alert)
+                    await session.commit()
 
             bot_logger.info(f"Alert sent for task {task.task_id}, user {task.user_id}, {task.symbol}")
 
@@ -141,8 +154,8 @@ class MonitorEngine:
                     )
                     session.add(alert)
                     await session.commit()
-            except:
-                pass
+            except Exception as log_error:
+                bot_logger.error(f"Failed to log alert failure: {log_error}", exc_info=True)
 
     async def load_active_tasks(self):
         """从数据库加载所有活跃任务"""
@@ -157,9 +170,15 @@ class MonitorEngine:
 
         except Exception as e:
             bot_logger.error(f"Error loading active tasks: {e}", exc_info=True)
+            # 保留现有缓存，不清空
+            bot_logger.warning(f"Keeping {len(self.tasks_cache)} tasks from previous load")
 
     async def run_check_cycle(self):
         """执行一次检查周期"""
+        if not self.bot:
+            bot_logger.warning("Bot not set, skipping check cycle")
+            return
+
         await self.load_active_tasks()
 
         if not self.tasks_cache:
@@ -182,22 +201,39 @@ class MonitorEngine:
             bot_logger.warning("Monitor engine is already running")
             return
 
+        if not self.bot:
+            bot_logger.error("Cannot start monitor engine: Bot not set")
+            raise RuntimeError("Bot must be set before starting monitor engine")
+
         self.running = True
         bot_logger.info("Monitor engine started")
 
-        while self.running:
-            try:
-                await self.run_check_cycle()
-            except Exception as e:
-                bot_logger.error(f"Error in monitor engine cycle: {e}", exc_info=True)
+        try:
+            while self.running:
+                try:
+                    await self.run_check_cycle()
+                except Exception as e:
+                    bot_logger.error(f"Error in monitor engine cycle: {e}", exc_info=True)
 
-            # 等待下一个周期
-            await asyncio.sleep(self.check_interval)
+                # 等待下一个周期
+                await asyncio.sleep(self.check_interval)
+        except asyncio.CancelledError:
+            bot_logger.info("Monitor engine task cancelled")
+            raise
+        finally:
+            self.running = False
+            bot_logger.info("Monitor engine stopped")
 
     async def stop(self):
         """停止监控引擎"""
+        if not self.running:
+            bot_logger.info("Monitor engine is not running")
+            return
+
         self.running = False
-        bot_logger.info("Monitor engine stopped")
+        bot_logger.info("Monitor engine stop requested")
+        # 等待当前周期完成
+        await asyncio.sleep(1)
 
 
 # 全局监控引擎实例

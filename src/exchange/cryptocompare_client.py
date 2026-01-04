@@ -290,9 +290,12 @@ class CryptocompareClient:
 
     async def close(self):
         """关闭 aiohttp session"""
-        if self.session and not self.session.closed:
-            await self.session.close()
-            exchange_logger.info("Cryptocompare client session closed")
+        try:
+            if self.session and not self.session.closed:
+                await self.session.close()
+                exchange_logger.info("Cryptocompare client session closed")
+        except Exception as e:
+            exchange_logger.error(f"Error closing session: {e}", exc_info=True)
 
 
 # 全局客户端实例
