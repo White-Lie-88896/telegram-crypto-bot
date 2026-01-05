@@ -2,7 +2,11 @@
 
 // API基础配置
 const API_BASE = '/api';
-const WS_BASE = 'ws://localhost:8888';
+// 动态WebSocket协议
+const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_HOST = window.location.hostname;
+const WS_PORT = window.location.port || '8888';
+const WS_BASE = `${WS_PROTOCOL}//${WS_HOST}:${WS_PORT}`;
 
 // 状态管理
 const state = {
@@ -10,6 +14,36 @@ const state = {
     tasks: [],
     alerts: [],
     systemStatus: {}
+};
+
+// DOM安全工具（防止XSS）
+const DOMUtils = {
+    // 转义HTML特殊字符
+    escapeHtml(unsafe) {
+        if (typeof unsafe !== 'string') return String(unsafe);
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
+    // 安全创建元素
+    createElement(tag, attributes = {}, textContent = '') {
+        const element = document.createElement(tag);
+        for (const [key, value] of Object.entries(attributes)) {
+            if (key === 'className') {
+                element.className = value;
+            } else {
+                element.setAttribute(key, value);
+            }
+        }
+        if (textContent) {
+            element.textContent = textContent;  // textContent 自动转义
+        }
+        return element;
+    }
 };
 
 // 工具函数
@@ -51,15 +85,34 @@ const utils = {
     }
 };
 
+// CSRF Token管理
+function getCsrfToken() {
+    return document.cookie.split('; ')
+        .find(row => row.startsWith('csrf_token='))
+        ?.split('=')[1] || '';
+}
+
 // API请求封装
 const api = {
     async get(endpoint) {
         try {
-            const response = await fetch(`${API_BASE}${endpoint}`);
-            if (!response.ok) throw new Error('Network response was not ok');
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+            if (!response.ok) {
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return null;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             return await response.json();
         } catch (error) {
             console.error('API Error:', error);
+            showError(`API请求失败: ${error.message}`);
             return null;
         }
     },
@@ -69,18 +122,58 @@ const api = {
             const response = await fetch(`${API_BASE}${endpoint}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': getCsrfToken()
                 },
+                credentials: 'include',
                 body: JSON.stringify(data)
             });
-            if (!response.ok) throw new Error('Network response was not ok');
+            if (!response.ok) {
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return null;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             return await response.json();
         } catch (error) {
             console.error('API Error:', error);
+            showError(`API请求失败: ${error.message}`);
+            return null;
+        }
+    },
+
+    async delete(endpoint) {
+        try {
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': getCsrfToken()
+                },
+                credentials: 'include'
+            });
+            if (!response.ok) {
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return null;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            showError(`API请求失败: ${error.message}`);
             return null;
         }
     }
 };
+
+// 错误提示
+function showError(message) {
+    console.error(message);
+    // 可以在这里添加UI提示
+}
 
 // 数据加载函数
 async function loadDashboardData() {
@@ -100,17 +193,12 @@ async function loadDashboardData() {
 // 加载统计数据
 async function loadStats() {
     try {
-        // 模拟数据 - 实际应从后端API获取
-        const stats = {
-            activeTasks: 12,
-            alertCount: 8,
-            apiUptime: 98.5,
-            userCount: 5
-        };
+        const stats = await api.get('/stats');
+        if (!stats) return;
 
-        document.getElementById('active-tasks').textContent = stats.activeTasks;
-        document.getElementById('alert-count').textContent = stats.alertCount;
-        document.getElementById('user-count').textContent = stats.userCount;
+        document.getElementById('active-tasks').textContent = stats.activeTasks || 0;
+        document.getElementById('alert-count').textContent = stats.alertCount || 0;
+        document.getElementById('user-count').textContent = stats.userCount || 0;
     } catch (error) {
         console.error('Error loading stats:', error);
     }
@@ -119,15 +207,8 @@ async function loadStats() {
 // 加载实时价格
 async function loadPrices() {
     try {
-        // 模拟数据 - 实际应从后端API获取
-        const priceData = {
-            'BTC': { price: 89915.00, change: 0.73 },
-            'ETH': { price: 3102.17, change: -1.24 },
-            'SOL': { price: 145.23, change: 2.56 },
-            'ADA': { price: 0.8524, change: -0.45 },
-            'BNB': { price: 612.34, change: 1.89 },
-            'XRP': { price: 1.23, change: 3.45 }
-        };
+        const priceData = await api.get('/prices');
+        if (!priceData) return;
 
         const priceGrid = document.getElementById('price-grid');
         priceGrid.innerHTML = '';
@@ -143,7 +224,7 @@ async function loadPrices() {
     }
 }
 
-// 创建价格卡片
+// 创建价格卡片（安全版本，防止XSS）
 function createPriceCard(symbol, data) {
     const card = document.createElement('div');
     card.className = 'price-card';
@@ -151,13 +232,15 @@ function createPriceCard(symbol, data) {
     const changeClass = data.change >= 0 ? 'up' : 'down';
     const changeSymbol = data.change >= 0 ? '↗' : '↘';
 
-    card.innerHTML = `
-        <div class="price-symbol">${symbol}</div>
-        <div class="price-value">${utils.formatPrice(data.price)}</div>
-        <div class="price-change ${changeClass}">
-            ${utils.formatPercentage(data.change)} ${changeSymbol}
-        </div>
-    `;
+    // 使用安全的DOM创建方法
+    const symbolDiv = DOMUtils.createElement('div', {className: 'price-symbol'}, symbol);
+    const valueDiv = DOMUtils.createElement('div', {className: 'price-value'}, utils.formatPrice(data.price));
+    const changeDiv = DOMUtils.createElement('div', {className: `price-change ${changeClass}`},
+        `${utils.formatPercentage(data.change)} ${changeSymbol}`);
+
+    card.appendChild(symbolDiv);
+    card.appendChild(valueDiv);
+    card.appendChild(changeDiv);
 
     return card;
 }
@@ -165,39 +248,21 @@ function createPriceCard(symbol, data) {
 // 加载预警历史
 async function loadAlerts() {
     try {
-        // 模拟数据 - 实际应从后端API获取
-        const alerts = [
-            {
-                time: Date.now() - 300000,
-                symbol: 'BTC',
-                type: '价格阈值',
-                condition: '≥ $90,000',
-                price: 90125.00,
-                status: 'success'
-            },
-            {
-                time: Date.now() - 1800000,
-                symbol: 'ETH',
-                type: '百分比涨跌',
-                condition: '涨幅 ≥ 5%',
-                price: 3150.50,
-                status: 'success'
-            },
-            {
-                time: Date.now() - 3600000,
-                symbol: 'SOL',
-                type: '价格阈值',
-                condition: '≤ $140',
-                price: 139.80,
-                status: 'success'
-            }
-        ];
+        const alerts = await api.get('/alerts?limit=10');
+        if (!alerts) return;
 
         const alertsTable = document.getElementById('alerts-table');
         alertsTable.innerHTML = '';
 
         alerts.forEach(alert => {
-            const row = createAlertRow(alert);
+            const row = createAlertRow({
+                time: new Date(alert.triggered_at).getTime(),
+                symbol: alert.symbol,
+                type: alert.task_id ? '监控预警' : '系统预警',
+                condition: parseAlertMessage(alert.message),
+                price: alert.trigger_price,
+                status: alert.sent_success ? 'success' : 'error'
+            });
             alertsTable.appendChild(row);
         });
 
@@ -207,35 +272,67 @@ async function loadAlerts() {
     }
 }
 
-// 创建预警表格行
+// 解析预警消息，提取触发条件
+function parseAlertMessage(message) {
+    // 从消息中提取关键信息
+    if (message.includes('突破') || message.includes('跌破')) {
+        const match = message.match(/(\d+\.?\d*)/);
+        return match ? `价格 ${message.includes('突破') ? '≥' : '≤'} $${match[1]}` : '价格预警';
+    } else if (message.includes('涨') || message.includes('跌')) {
+        const match = message.match(/([+-]?\d+\.?\d*)%/);
+        return match ? `涨跌 ${match[1]}%` : '涨跌预警';
+    }
+    return '预警触发';
+}
+
+// 创建预警表格行（安全版本，防止XSS）
 function createAlertRow(alert) {
     const row = document.createElement('tr');
-    row.innerHTML = `
-        <td>${utils.formatTime(alert.time)}</td>
-        <td><strong>${alert.symbol}</strong></td>
-        <td>${alert.type}</td>
-        <td>${alert.condition}</td>
-        <td>${utils.formatPrice(alert.price)}</td>
-        <td><span class="status-badge ${alert.status}">已发送</span></td>
-    `;
+
+    // 安全创建各个单元格
+    const timeCell = DOMUtils.createElement('td', {}, utils.formatTime(alert.time));
+
+    const symbolCell = document.createElement('td');
+    const symbolStrong = DOMUtils.createElement('strong', {}, alert.symbol);
+    symbolCell.appendChild(symbolStrong);
+
+    const typeCell = DOMUtils.createElement('td', {}, alert.type);
+    const conditionCell = DOMUtils.createElement('td', {}, alert.condition);
+    const priceCell = DOMUtils.createElement('td', {}, utils.formatPrice(alert.price));
+
+    const statusCell = document.createElement('td');
+    const statusBadge = DOMUtils.createElement('span', {className: `status-badge ${alert.status}`}, '已发送');
+    statusCell.appendChild(statusBadge);
+
+    row.appendChild(timeCell);
+    row.appendChild(symbolCell);
+    row.appendChild(typeCell);
+    row.appendChild(conditionCell);
+    row.appendChild(priceCell);
+    row.appendChild(statusCell);
+
     return row;
 }
 
 // 加载系统状态
 async function loadSystemStatus() {
     try {
-        // 更新最后检查时间
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('zh-CN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-        document.getElementById('last-check').textContent = timeStr;
+        const systemStatus = await api.get('/system');
+        if (!systemStatus) return;
 
-        // 模拟数据库信息
-        document.getElementById('db-records').textContent = '1,234';
-        document.getElementById('db-size').textContent = '2.4 MB';
+        // 更新监控引擎状态
+        if (systemStatus.monitorEngine) {
+            const lastCheck = new Date(systemStatus.monitorEngine.lastCheck);
+            document.getElementById('last-check').textContent = lastCheck.toLocaleTimeString('zh-CN');
+        }
+
+        // 更新数据库信息
+        if (systemStatus.database) {
+            document.getElementById('db-records').textContent = systemStatus.database.records.toLocaleString();
+            document.getElementById('db-size').textContent = systemStatus.database.size;
+        }
+
+        state.systemStatus = systemStatus;
     } catch (error) {
         console.error('Error loading system status:', error);
     }
