@@ -234,7 +234,8 @@ class WebDashboardAPI:
         """登录处理器"""
         try:
             data = await request.json()
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, ValueError) as e:
+            exchange_logger.error(f"JSON decode error: {e}, Content-Type: {request.content_type}")
             return web.json_response({'error': 'Invalid JSON'}, status=400)
 
         password = data.get('password')

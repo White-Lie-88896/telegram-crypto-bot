@@ -15,7 +15,15 @@
       "Bash(systemctl restart:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(tree:*)",
+      "Bash(cat:*)",
+      "Bash(test:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(netstat:*)",
+      "Bash(ss:*)",
+      "Bash(kill:*)"
     ]
   }
 }

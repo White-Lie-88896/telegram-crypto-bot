@@ -244,6 +244,8 @@
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            console.log('Form submitted');  // 调试日志
+
             const password = passwordInput.value.trim();
 
             if (!password) {
@@ -251,21 +253,29 @@
                 return;
             }
 
+            console.log('Password entered, making API call');  // 调试日志
+
             // 显示加载状态
             loginBtn.disabled = true;
             btnText.innerHTML = '<span class="loading-spinner"></span>登录中...';
             hideError();
 
             try {
+                console.log('Sending request to /api/login');  // 调试日志
+
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ password })
+                    body: JSON.stringify({ password }),
+                    credentials: 'include'
                 });
 
+                console.log('Response status:', response.status);  // 调试日志
+
                 const data = await response.json();
+                console.log('Response data:', data);  // 调试日志
 
                 if (response.ok && data.success) {
                     // 登录成功
@@ -281,7 +291,7 @@
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                showError('登录失败，请稍后再试');
+                showError('登录失败，请稍后再试: ' + error.message);
                 loginBtn.disabled = false;
                 btnText.textContent = '登录';
             }

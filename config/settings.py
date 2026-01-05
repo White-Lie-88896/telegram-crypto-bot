@@ -60,6 +60,28 @@ class Settings:
     REPORT_USER_ID: int = int(os.getenv('REPORT_USER_ID', '0'))
 
     # ======================
+    # Web管理后台配置
+    # ======================
+    WEB_HOST: str = os.getenv('WEB_HOST', '127.0.0.1')
+    WEB_PORT: int = int(os.getenv('WEB_PORT', '8888'))
+    WEB_ADMIN_TOKEN: str = os.getenv('WEB_ADMIN_TOKEN', '')
+    WEB_ADMIN_PASSWORD: str = os.getenv('WEB_ADMIN_PASSWORD', '')
+
+    # ======================
+    # HTTP超时配置
+    # ======================
+    HTTP_TIMEOUT_TOTAL: int = int(os.getenv('HTTP_TIMEOUT_TOTAL', '30'))
+    HTTP_TIMEOUT_CONNECT: int = int(os.getenv('HTTP_TIMEOUT_CONNECT', '10'))
+    HTTP_TIMEOUT_SOCK_READ: int = int(os.getenv('HTTP_TIMEOUT_SOCK_READ', '20'))
+
+    # ======================
+    # API重试配置
+    # ======================
+    API_RETRY_MAX_ATTEMPTS: int = int(os.getenv('API_RETRY_MAX_ATTEMPTS', '3'))
+    API_RETRY_INITIAL_DELAY: float = float(os.getenv('API_RETRY_INITIAL_DELAY', '1.0'))
+    API_RETRY_BACKOFF_FACTOR: float = float(os.getenv('API_RETRY_BACKOFF_FACTOR', '2.0'))
+
+    # ======================
     # 其他配置
     # ======================
     DEBUG: bool = os.getenv('DEBUG', 'False').lower() == 'true'
@@ -87,6 +109,10 @@ class Settings:
         print("=" * 50)
         print(f"TELEGRAM_BOT_TOKEN: {'*' * 10 if cls.TELEGRAM_BOT_TOKEN else 'NOT SET'}")
         print(f"BINANCE_API_KEY: {'*' * 10 if cls.BINANCE_API_KEY else 'NOT SET'}")
+        print(f"WEB_ADMIN_TOKEN: {'*' * 10 if cls.WEB_ADMIN_TOKEN else 'NOT SET'}")
+        print(f"WEB_ADMIN_PASSWORD: {'*' * 10 if cls.WEB_ADMIN_PASSWORD else 'NOT SET'}")
+        print(f"WEB_HOST: {cls.WEB_HOST}")
+        print(f"WEB_PORT: {cls.WEB_PORT}")
         print(f"DATABASE_URL: {cls.DATABASE_URL}")
         print(f"CHECK_INTERVAL: {cls.CHECK_INTERVAL}s")
         print(f"MAX_CONCURRENT_TASKS: {cls.MAX_CONCURRENT_TASKS}")

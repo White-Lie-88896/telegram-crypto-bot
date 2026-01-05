@@ -49,11 +49,15 @@ class PriceAPIManager:
         # Ticker数据缓存
         self.ticker_cache: Dict[str, Dict[str, Any]] = {}
 
+        # 添加锁保护缓存（防止并发访问问题）
+        self._price_cache_lock = asyncio.Lock()
+        self._ticker_cache_lock = asyncio.Lock()
+
         exchange_logger.info(f"Price API Manager initialized with {len(self.apis)} API sources and 30s cache")
 
     async def get_current_price(self, symbol: str) -> float:
         """
-        获取当前价格（带缓存和故障转移）
+        获取当前价格（带缓存和故障转移，线程安全）
 
         Args:
             symbol: 交易对符号
@@ -64,17 +68,18 @@ class PriceAPIManager:
         Raises:
             BinanceAPIError: 所有API都失败时抛出
         """
-        # 检查缓存
-        if symbol in self.price_cache:
-            cached_data = self.price_cache[symbol]
-            cache_age = datetime.utcnow() - cached_data['timestamp']
+        # 检查缓存（加锁）
+        async with self._price_cache_lock:
+            if symbol in self.price_cache:
+                cached_data = self.price_cache[symbol]
+                cache_age = datetime.utcnow() - cached_data['timestamp']
 
-            if cache_age < self.cache_duration:
-                self.last_api_used = cached_data.get('api', 'Cache')
-                exchange_logger.debug(f"Using cached price for {symbol}: ${cached_data['price']} from {self.last_api_used} (age: {cache_age.total_seconds():.1f}s)")
-                return cached_data['price']
-            else:
-                exchange_logger.debug(f"Cache expired for {symbol} (age: {cache_age.total_seconds():.1f}s)")
+                if cache_age < self.cache_duration:
+                    self.last_api_used = cached_data.get('api', 'Cache')
+                    exchange_logger.debug(f"Using cached price for {symbol}: ${cached_data['price']} from {self.last_api_used} (age: {cache_age.total_seconds():.1f}s)")
+                    return cached_data['price']
+                else:
+                    exchange_logger.debug(f"Cache expired for {symbol} (age: {cache_age.total_seconds():.1f}s)")
 
         errors = []
 
@@ -87,20 +92,22 @@ class PriceAPIManager:
                 exchange_logger.debug(f"Trying {api_name} for {symbol}")
                 price = await api_client.get_current_price(symbol)
 
-                # 成功！更新当前可用API
-                if api_index != self.current_api_index:
-                    exchange_logger.info(f"Switched to {api_name} as primary API")
-                    self.current_api_index = api_index
+                # 成功！更新缓存（加锁）
+                async with self._price_cache_lock:
+                    # 更新当前可用API
+                    if api_index != self.current_api_index:
+                        exchange_logger.info(f"Switched to {api_name} as primary API")
+                        self.current_api_index = api_index
 
-                # 记录最后使用的API
-                self.last_api_used = api_name
+                    # 记录最后使用的API
+                    self.last_api_used = api_name
 
-                # 更新缓存
-                self.price_cache[symbol] = {
-                    'price': price,
-                    'timestamp': datetime.utcnow(),
-                    'api': api_name
-                }
+                    # 更新缓存
+                    self.price_cache[symbol] = {
+                        'price': price,
+                        'timestamp': datetime.utcnow(),
+                        'api': api_name
+                    }
 
                 exchange_logger.debug(f"Got price from {api_name}: {symbol} = ${price} (cached)")
                 return price
@@ -122,7 +129,7 @@ class PriceAPIManager:
 
     async def get_24h_ticker(self, symbol: str) -> Dict[str, Any]:
         """
-        获取24小时行情数据（带缓存和故障转移）
+        获取24小时行情数据（带缓存和故障转移，线程安全）
 
         Args:
             symbol: 交易对符号
@@ -133,17 +140,18 @@ class PriceAPIManager:
         Raises:
             BinanceAPIError: 所有API都失败时抛出
         """
-        # 检查缓存
-        if symbol in self.ticker_cache:
-            cached_data = self.ticker_cache[symbol]
-            cache_age = datetime.utcnow() - cached_data['timestamp']
+        # 检查缓存（加锁）
+        async with self._ticker_cache_lock:
+            if symbol in self.ticker_cache:
+                cached_data = self.ticker_cache[symbol]
+                cache_age = datetime.utcnow() - cached_data['timestamp']
 
-            if cache_age < self.cache_duration:
-                self.last_api_used = cached_data.get('api', 'Cache')
-                exchange_logger.debug(f"Using cached ticker for {symbol} from {self.last_api_used} (age: {cache_age.total_seconds():.1f}s)")
-                return cached_data['ticker']
-            else:
-                exchange_logger.debug(f"Ticker cache expired for {symbol} (age: {cache_age.total_seconds():.1f}s)")
+                if cache_age < self.cache_duration:
+                    self.last_api_used = cached_data.get('api', 'Cache')
+                    exchange_logger.debug(f"Using cached ticker for {symbol} from {self.last_api_used} (age: {cache_age.total_seconds():.1f}s)")
+                    return cached_data['ticker']
+                else:
+                    exchange_logger.debug(f"Ticker cache expired for {symbol} (age: {cache_age.total_seconds():.1f}s)")
 
         errors = []
 
@@ -156,20 +164,22 @@ class PriceAPIManager:
                 exchange_logger.debug(f"Trying {api_name} for ticker {symbol}")
                 ticker = await api_client.get_24h_ticker(symbol)
 
-                # 成功！更新当前可用API
-                if api_index != self.current_api_index:
-                    exchange_logger.info(f"Switched to {api_name} as primary API")
-                    self.current_api_index = api_index
+                # 成功！更新缓存（加锁）
+                async with self._ticker_cache_lock:
+                    # 更新当前可用API
+                    if api_index != self.current_api_index:
+                        exchange_logger.info(f"Switched to {api_name} as primary API")
+                        self.current_api_index = api_index
 
-                # 记录最后使用的API
-                self.last_api_used = api_name
+                    # 记录最后使用的API
+                    self.last_api_used = api_name
 
-                # 更新缓存
-                self.ticker_cache[symbol] = {
-                    'ticker': ticker,
-                    'timestamp': datetime.utcnow(),
-                    'api': api_name
-                }
+                    # 更新缓存
+                    self.ticker_cache[symbol] = {
+                        'ticker': ticker,
+                        'timestamp': datetime.utcnow(),
+                        'api': api_name
+                    }
 
                 exchange_logger.debug(f"Got ticker from {api_name}: {symbol} (cached)")
                 return ticker

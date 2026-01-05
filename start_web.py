@@ -20,9 +20,9 @@ async def main():
     print("=" * 70)
     print()
 
-    # 启动Web服务器
+    # 启动Web服务器（使用配置文件中的设置）
     print("正在启动Web服务器...")
-    runner = await start_web_server(host='0.0.0.0', port=8888)
+    runner = await start_web_server()
     print("✓ Web服务器启动成功")
     print()
 
@@ -30,8 +30,7 @@ async def main():
     print("  🎉 Web管理后台已启动!")
     print()
     print("  📱 访问地址:")
-    print("     http://localhost:8080")
-    print("     http://0.0.0.0:8080")
+    print("     http://localhost:8888")
     print()
     print("  按 Ctrl+C 停止服务器")
     print("=" * 70)
