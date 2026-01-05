@@ -10,12 +10,13 @@ class MessageFormatter:
     """消息格式化工具类"""
 
     @staticmethod
-    def format_price_info(ticker_data: Dict[str, Any]) -> str:
+    def format_price_info(ticker_data: Dict[str, Any], api_source: str = 'Binance') -> str:
         """
         格式化价格查询结果
 
         Args:
             ticker_data: 24h ticker 数据
+            api_source: API数据来源
 
         Returns:
             格式化的消息文本
@@ -64,17 +65,18 @@ class MessageFormatter:
 24h 成交量：`{volume_str}` {symbol.replace('USDT', '')}
 
 ⏰ 更新时间：`{datetime.now().strftime('%H:%M:%S')}`
-💡 数据来源：Binance
+💡 数据来源：{api_source}
 """
         return message.strip()
 
     @staticmethod
-    def format_price_threshold_alert(alert_data: Dict[str, Any]) -> str:
+    def format_price_threshold_alert(alert_data: Dict[str, Any], api_source: str = 'Binance') -> str:
         """
         格式化价格阈值预警消息
 
         Args:
             alert_data: 预警数据
+            api_source: API数据来源
 
         Returns:
             格式化的消息文本
@@ -97,17 +99,18 @@ class MessageFormatter:
 {condition_text}价格阈值！
 
 触发时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-数据来源: Binance
+数据来源: {api_source}
 """
         return message.strip()
 
     @staticmethod
-    def format_percentage_alert(alert_data: Dict[str, Any]) -> str:
+    def format_percentage_alert(alert_data: Dict[str, Any], api_source: str = 'Binance') -> str:
         """
         格式化百分比涨跌预警消息
 
         Args:
             alert_data: 预警数据
+            api_source: API数据来源
 
         Returns:
             格式化的消息文本
@@ -129,7 +132,7 @@ class MessageFormatter:
 涨跌幅: `{change_pct:+.2f}%`
 
 触发时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-数据来源: Binance
+数据来源: {api_source}
 """
         return message.strip()
 

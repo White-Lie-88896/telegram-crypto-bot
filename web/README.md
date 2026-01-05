@@ -84,7 +84,7 @@ python web/server.py
 
 打开浏览器访问：
 ```
-http://localhost:8080
+http://localhost:8888
 ```
 
 ## 项目结构
@@ -176,7 +176,7 @@ GET /api/users
 host = '0.0.0.0'  # 监听所有接口
 
 # 端口号
-port = 8080       # 默认端口
+port = 8888       # 默认端口
 ```
 
 ### 前端配置

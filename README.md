@@ -541,6 +541,7 @@ python scripts/init_db.py
 - [x] **多API自动故障转移系统（Cryptocompare + CoinGecko + Binance）**
 - [x] **价格缓存机制（30秒缓存，减少API调用）**
 - [x] **API来源显示（所有通知显示数据来源）**
+- [x] **Apple风格Web管理后台（实时仪表板）**
 
 ### 🚧 进行中
 - [ ] 优化消息格式
@@ -551,7 +552,6 @@ python scripts/init_db.py
 - [ ] WebSocket 实时数据流
 - [ ] 多时间周期分析
 - [ ] 更多交易所支持
-- [ ] Web 管理后台
 - [ ] Docker 容器化部署
 - [ ] 国际化支持
 

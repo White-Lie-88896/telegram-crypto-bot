@@ -226,7 +226,7 @@ class WebDashboardAPI:
             return web.json_response({'error': str(e)}, status=500)
 
 
-async def start_web_server(host='0.0.0.0', port=8080):
+async def start_web_server(host='0.0.0.0', port=8888):
     """启动Web服务器"""
     dashboard = WebDashboardAPI()
 

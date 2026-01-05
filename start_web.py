@@ -22,7 +22,7 @@ async def main():
 
     # 启动Web服务器
     print("正在启动Web服务器...")
-    runner = await start_web_server(host='0.0.0.0', port=8080)
+    runner = await start_web_server(host='0.0.0.0', port=8888)
     print("✓ Web服务器启动成功")
     print()
 

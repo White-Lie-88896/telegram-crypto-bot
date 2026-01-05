@@ -2,7 +2,7 @@
 
 // API基础配置
 const API_BASE = '/api';
-const WS_BASE = 'ws://localhost:8080';
+const WS_BASE = 'ws://localhost:8888';
 
 // 状态管理
 const state = {

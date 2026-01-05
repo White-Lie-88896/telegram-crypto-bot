@@ -39,6 +39,9 @@ class PriceAPIManager:
         # 记录当前可用的API（用于优先选择）
         self.current_api_index = 0
 
+        # 记录最后成功使用的API名称
+        self.last_api_used = None
+
         # 价格缓存：{symbol: {'price': float, 'timestamp': datetime}}
         self.price_cache: Dict[str, Dict[str, Any]] = {}
         self.cache_duration = timedelta(seconds=30)  # 缓存30秒
@@ -67,7 +70,8 @@ class PriceAPIManager:
             cache_age = datetime.utcnow() - cached_data['timestamp']
 
             if cache_age < self.cache_duration:
-                exchange_logger.debug(f"Using cached price for {symbol}: ${cached_data['price']} (age: {cache_age.total_seconds():.1f}s)")
+                self.last_api_used = cached_data.get('api', 'Cache')
+                exchange_logger.debug(f"Using cached price for {symbol}: ${cached_data['price']} from {self.last_api_used} (age: {cache_age.total_seconds():.1f}s)")
                 return cached_data['price']
             else:
                 exchange_logger.debug(f"Cache expired for {symbol} (age: {cache_age.total_seconds():.1f}s)")
@@ -88,10 +92,14 @@ class PriceAPIManager:
                     exchange_logger.info(f"Switched to {api_name} as primary API")
                     self.current_api_index = api_index
 
+                # 记录最后使用的API
+                self.last_api_used = api_name
+
                 # 更新缓存
                 self.price_cache[symbol] = {
                     'price': price,
-                    'timestamp': datetime.utcnow()
+                    'timestamp': datetime.utcnow(),
+                    'api': api_name
                 }
 
                 exchange_logger.debug(f"Got price from {api_name}: {symbol} = ${price} (cached)")
@@ -131,7 +139,8 @@ class PriceAPIManager:
             cache_age = datetime.utcnow() - cached_data['timestamp']
 
             if cache_age < self.cache_duration:
-                exchange_logger.debug(f"Using cached ticker for {symbol} (age: {cache_age.total_seconds():.1f}s)")
+                self.last_api_used = cached_data.get('api', 'Cache')
+                exchange_logger.debug(f"Using cached ticker for {symbol} from {self.last_api_used} (age: {cache_age.total_seconds():.1f}s)")
                 return cached_data['ticker']
             else:
                 exchange_logger.debug(f"Ticker cache expired for {symbol} (age: {cache_age.total_seconds():.1f}s)")
@@ -152,10 +161,14 @@ class PriceAPIManager:
                     exchange_logger.info(f"Switched to {api_name} as primary API")
                     self.current_api_index = api_index
 
+                # 记录最后使用的API
+                self.last_api_used = api_name
+
                 # 更新缓存
                 self.ticker_cache[symbol] = {
                     'ticker': ticker,
-                    'timestamp': datetime.utcnow()
+                    'timestamp': datetime.utcnow(),
+                    'api': api_name
                 }
 
                 exchange_logger.debug(f"Got ticker from {api_name}: {symbol} (cached)")
